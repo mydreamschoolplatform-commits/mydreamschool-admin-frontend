@@ -127,7 +127,7 @@ const SchoolRegistry = () => {
                                 </div>
                             </div>
                             <h3 className="font-bold text-lg text-gray-900 mb-1">{school.name}</h3>
-                            {school.schoolCode && <div className="text-xs font-mono bg-gray-100 inline-block px-2 py-0.5 rounded text-gray-600 mb-3">{school.schoolCode}</div>}
+                            {school.schoolCode && school.schoolCode.toLowerCase() !== 'n/a' && <div className="text-xs font-mono bg-gray-100 inline-block px-2 py-0.5 rounded text-gray-600 mb-3">{school.schoolCode}</div>}
 
                             <div className="flex items-center space-x-4 text-sm text-gray-600 mt-2 border-t pt-3">
                                 <div className="flex items-center">

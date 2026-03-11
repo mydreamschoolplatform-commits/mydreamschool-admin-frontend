@@ -141,7 +141,6 @@ const AdminAnnouncementsPage = () => {
                 if (formData.targetClass) data.append('targetAudience[class]', formData.targetClass);
                 if (formData.targetSubjectId) data.append('targetAudience[subjectId]', formData.targetSubjectId);
                 if (formData.targetSchoolId) data.append('targetAudience[schoolId]', formData.targetSchoolId);
-                if (targetAudience.schoolId) data.append('targetAudience[schoolId]', targetAudience.schoolId);
 
                 if (formData.attachment) {
                     data.append('attachment', formData.attachment);
@@ -567,7 +566,7 @@ const AdminAnnouncementsPage = () => {
                                                 >
                                                     <option value="">-- Select Target School --</option>
                                                     {schools.map(s => (
-                                                        <option key={s._id} value={s._id}>{s.name} {s.schoolCode ? `(${s.schoolCode})` : ''}</option>
+                                                        <option key={s._id} value={s._id}>{s.name} {(s.schoolCode && s.schoolCode !== 'N/A' && s.schoolCode.toLowerCase() !== 'n/a') ? `(${s.schoolCode})` : ''}</option>
                                                     ))}
                                                 </select>
                                             )}
