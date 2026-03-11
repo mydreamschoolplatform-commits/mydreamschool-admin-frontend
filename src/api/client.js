@@ -4,6 +4,7 @@ import { API_BASE_URL } from './config';
 
 const client = axios.create({
     baseURL: API_BASE_URL,
+    timeout: 30000, // 30 seconds timeout to prevent infinite hanging
 });
 
 // Add a request interceptor to include the auth token
