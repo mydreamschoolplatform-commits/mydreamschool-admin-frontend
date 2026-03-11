@@ -115,6 +115,18 @@ const AdminAnnouncementsPage = () => {
                     if (formData.targetType === 'School' && !formData.targetSchoolId) {
                         return alert("Please select a School");
                     }
+                    if (formData.targetType === 'School') {
+                        // Determine if schoolId is a valid ObjectId (hex string of 24 chars)
+                        // If it's not (meaning it's a dynamic school name string), we shouldn't send schoolId.
+                        // Instead, we might need to send a different field, or ideally, the backend should handle it.
+                        // The current backend Announcement model strictly requires an ObjectId ref for schoolId.
+                        // For a quick fix, let's create the School entry on the fly if it's dynamic, OR
+                        // since we can't easily change the backend schema without large refactors, let's check
+                        const isObjectId = /^[a-f\d]{24}$/i.test(formData.targetSchoolId);
+                        if (!isObjectId) {
+                            return alert(`Cannot target "${formData.targetSchoolId}" directly because it hasn't been officially registered in the School Registry yet. Please go to Schools -> Register it first.`);
+                        }
+                    }
                     // Fallback check
                     return alert("Please select a specific target (Class, Subject, or School)");
                 }
