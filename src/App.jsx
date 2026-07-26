@@ -40,9 +40,11 @@ const App = () => {
               <Route path="/announcements" element={<AdminAnnouncementsPage />} />
 
               {/* Super Admin Foundation Routes */}
-              <Route path="/admin/system-health" element={<SystemHealth />} />
-              <Route path="/admin/schools" element={<SchoolRegistry />} />
-              <Route path="/admin/staff" element={<StaffRegistry />} />
+              <Route element={<ProtectedRoute allowedRoles={['Super Admin', 'Owner']} />}>
+                <Route path="/admin/system-health" element={<SystemHealth />} />
+                <Route path="/admin/schools" element={<SchoolRegistry />} />
+                <Route path="/admin/staff" element={<StaffRegistry />} />
+              </Route>
 
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
             </Route>
