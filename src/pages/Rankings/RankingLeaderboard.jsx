@@ -27,12 +27,39 @@ const RankingLeaderboard = () => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
+    // Available classes based on role
+    const availableClasses = React.useMemo(() => {
+        if (user?.role !== 'Teacher') {
+            return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        }
+        const classes = new Set();
+        let hasAll = false;
+        (user?.assignedSubjects || []).forEach(s => {
+            if (!s.classes || s.classes.length === 0) hasAll = true;
+            else s.classes.forEach(c => classes.add(parseInt(c, 10)));
+        });
+        if (hasAll || classes.size === 0) {
+            return [6, 7, 8, 9, 10];
+        }
+        return Array.from(classes).sort((a, b) => a - b);
+    }, [user]);
+
+    useEffect(() => {
+        if (availableClasses.length > 0 && !availableClasses.includes(parseInt(className, 10))) {
+            setClassName(String(availableClasses[0]));
+        }
+    }, [availableClasses, className]);
+
     useEffect(() => {
         // Fetch Subjects
         const loadSubjects = async () => {
             try {
-                const res = await client.get('/subjects');
-                setSubjectsList(res.data || []);
+                const res = await client.get('/admin/subjects');
+                const list = res.data || [];
+                setSubjectsList(list);
+                if (user?.role === 'Teacher' && list.length > 0 && !subjectId) {
+                    setSubjectId(list[0]._id);
+                }
             } catch (err) {
                 console.error("Subject Load Error", err);
             }
@@ -184,8 +211,8 @@ const RankingLeaderboard = () => {
                             onChange={(e) => setClassName(e.target.value)}
                             className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                         >
-                            {[...Array(10)].map((_, i) => (
-                                <option key={i + 1} value={String(i + 1)}>Class {i + 1}</option>
+                            {availableClasses.map(c => (
+                                <option key={c} value={String(c)}>Class {c}</option>
                             ))}
                         </select>
                     </div>

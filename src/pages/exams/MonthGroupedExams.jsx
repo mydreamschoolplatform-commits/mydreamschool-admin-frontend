@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Clock, Eye, Copy, Archive, MoreVertical, BookOpen, Layers, CheckCircle, CheckSquare, Square, Trash2 } from 'lucide-react';
 
-const MonthGroupedExams = ({ exams, onAction, selectedExams = new Set(), onToggleSelection, onToggleSelectAll }) => {
+const MonthGroupedExams = ({ exams, onAction, selectedExams = new Set(), onToggleSelection, onToggleSelectAll, userRole, canPublish }) => {
     // 1. Sort by Date (Newest First)
     const sortedExams = [...exams].sort((a, b) => {
         const dateA = new Date(a.startTime || a.createdAt);
@@ -19,10 +19,8 @@ const MonthGroupedExams = ({ exams, onAction, selectedExams = new Set(), onToggl
         return acc;
     }, {});
 
-    // 3. Get Month Keys in Order (since we sorted exams desc, the keys creation order *should* be roughly desc, 
-    // but object key iteration isn't guaranteed. Better to rely on the first exam of the group for sorting keys)
+    // 3. Get Month Keys in Order
     const monthKeys = Object.keys(grouped).sort((a, b) => {
-        // Parse "January 2026" to date object for comparison
         const dateA = new Date(a);
         const dateB = new Date(b);
         return dateB - dateA;
@@ -30,7 +28,7 @@ const MonthGroupedExams = ({ exams, onAction, selectedExams = new Set(), onToggl
 
     return (
         <div className="space-y-8 max-w-5xl mx-auto">
-            {exams.length > 0 && onToggleSelectAll && (
+            {exams.length > 0 && onToggleSelectAll && (userRole === 'Super Admin' || userRole === 'Owner') && (
                 <div className="flex justify-end mb-2">
                     <button
                         onClick={onToggleSelectAll}
@@ -59,6 +57,8 @@ const MonthGroupedExams = ({ exams, onAction, selectedExams = new Set(), onToggl
                                 onAction={onAction}
                                 isSelected={selectedExams.has(exam._id)}
                                 onToggle={() => onToggleSelection && onToggleSelection(exam._id)}
+                                userRole={userRole}
+                                canPublish={canPublish}
                             />
                         ))}
                     </div>
@@ -68,12 +68,15 @@ const MonthGroupedExams = ({ exams, onAction, selectedExams = new Set(), onToggl
     );
 };
 
-const ExamCard = ({ exam, onAction, isSelected, onToggle }) => {
+const ExamCard = ({ exam, onAction, isSelected, onToggle, userRole, canPublish }) => {
     const date = new Date(exam.startTime || exam.createdAt);
     const day = date.getDate();
     const dayName = date.toLocaleDateString('default', { weekday: 'short' });
     const time = date.toLocaleTimeString('default', { hour: '2-digit', minute: '2-digit' });
     const isDraft = !exam.isPublished;
+    const isTeacher = userRole === 'Teacher';
+    const isSuperAdmin = userRole === 'Super Admin' || userRole === 'Owner';
+    const isPublishRestricted = isTeacher && canPublish !== true;
 
     // Subject Color Mapping (Vibrant & Distinct)
     const subjectColors = {
@@ -92,17 +95,19 @@ const ExamCard = ({ exam, onAction, isSelected, onToggle }) => {
 
     return (
         <div className={`group bg-white rounded-xl border ${isSelected ? 'border-blue-300 shadow-blue-100 ring-2 ring-blue-500 ring-opacity-50' : 'border-slate-200 hover:border-indigo-300'} shadow-sm hover:shadow-md transition-all p-0 flex overflow-hidden`}>
-            {/* Selection Column */}
-            <div
-                onClick={(e) => { e.stopPropagation(); onToggle && onToggle(); }}
-                className={`w-14 flex items-center justify-center shrink-0 border-r border-slate-100 cursor-pointer transition-colors ${isSelected ? 'bg-blue-50' : 'bg-white hover:bg-slate-50'}`}
-            >
-                {isSelected ? (
-                    <CheckSquare size={22} className="text-blue-600" />
-                ) : (
-                    <Square size={22} className="text-slate-300" />
-                )}
-            </div>
+            {/* Selection Column (Super Admin Only) */}
+            {isSuperAdmin && (
+                <div
+                    onClick={(e) => { e.stopPropagation(); onToggle && onToggle(); }}
+                    className={`w-14 flex items-center justify-center shrink-0 border-r border-slate-100 cursor-pointer transition-colors ${isSelected ? 'bg-blue-50' : 'bg-white hover:bg-slate-50'}`}
+                >
+                    {isSelected ? (
+                        <CheckSquare size={22} className="text-blue-600" />
+                    ) : (
+                        <Square size={22} className="text-slate-300" />
+                    )}
+                </div>
+            )}
 
             {/* Date Column (Color Coded) */}
             <div className={`w-24 flex flex-col items-center justify-center shrink-0 border-r border-slate-100 ${isDraft ? 'bg-slate-50 opacity-75' : 'bg-white'}`}>
@@ -130,15 +135,23 @@ const ExamCard = ({ exam, onAction, isSelected, onToggle }) => {
 
                     {/* Status Toggle Button (Unified Badge Style) */}
                     <button
+                        disabled={isPublishRestricted}
                         onClick={(e) => {
                             e.stopPropagation();
+                            if (isPublishRestricted) return;
                             onAction('toggleStatus', exam);
                         }}
-                        className={`ml-auto px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all shadow-sm hover:shadow-md ${isDraft
+                        className={`ml-auto px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all shadow-sm ${
+                            isPublishRestricted ? 'opacity-60 cursor-not-allowed ' : 'hover:shadow-md '
+                        }${isDraft
                             ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300'
                             : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300'
                             }`}
-                        title={isDraft ? "Status: Draft. Click to Publish." : "Status: Published. Click to Unpublish."}
+                        title={
+                            isPublishRestricted
+                                ? "Publishing permission required. Contact Super Admin."
+                                : (isDraft ? "Status: Draft. Click to Publish." : "Status: Published. Click to Unpublish.")
+                        }
                     >
                         {isDraft ? <Clock size={14} /> : <CheckCircle size={14} />}
                         {isDraft ? 'Draft' : 'Published'} v{exam.version || 1}
@@ -183,27 +196,26 @@ const ExamCard = ({ exam, onAction, isSelected, onToggle }) => {
                 >
                     <Copy size={18} />
                 </button>
-                <button
-                    onClick={() => onAction('edit', exam)}
-                    className="p-2 text-slate-400 hover:text-amber-600 hover:bg-white rounded-lg transition-all shadow-sm"
-                    title="Edit"
-                >
-                    <div className="transform rotate-0">✏️</div>
-                </button>
-                {/* <button
-                    onClick={() => onAction('archive', exam)}
-                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-lg transition-all shadow-sm"
-                    title="Archive"
-                >
-                    <Archive size={18} />
-                </button> */}
-                <button
-                    onClick={() => onAction('delete', exam)}
-                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-white rounded-lg transition-all shadow-sm group relative"
-                    title="Delete Exam"
-                >
-                    <Trash2 size={18} />
-                </button>
+                {/* Teachers cannot edit already-published exams */}
+                {(!isTeacher || !exam.isPublished) && (
+                    <button
+                        onClick={() => onAction('edit', exam)}
+                        className="p-2 text-slate-400 hover:text-amber-600 hover:bg-white rounded-lg transition-all shadow-sm"
+                        title="Edit"
+                    >
+                        <div className="transform rotate-0">✏️</div>
+                    </button>
+                )}
+                {/* Only Super Admin can delete exams */}
+                {isSuperAdmin && (
+                    <button
+                        onClick={() => onAction('delete', exam)}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-white rounded-lg transition-all shadow-sm group relative"
+                        title="Delete Exam"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                )}
             </div>
         </div>
     );

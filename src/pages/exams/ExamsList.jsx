@@ -349,8 +349,8 @@ const ExamsList = () => {
                 </div>
             </div>
 
-            {/* Bulk Actions Bar */}
-            {selectedExams.size > 0 && (
+            {/* Bulk Actions Bar (Super Admin Only) */}
+            {(user?.role === 'Super Admin' || user?.role === 'Owner') && selectedExams.size > 0 && (
                 <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg flex items-center justify-between mb-4 animate-in fade-in slide-in-from-top-2">
                     <span className="text-blue-800 font-medium tracking-tight">
                         <strong>{selectedExams.size}</strong> exam(s) selected
@@ -383,6 +383,8 @@ const ExamsList = () => {
                             selectedExams={selectedExams}
                             onToggleSelection={toggleExamSelection}
                             onToggleSelectAll={toggleSelectAll}
+                            userRole={user?.role}
+                            canPublish={user?.permissions?.canPublish}
                         />
                     </div>
                 )}
@@ -399,24 +401,37 @@ const ExamsList = () => {
                             <p className="text-slate-600 mb-6">
                                 You are about to publish <strong>{selectedExamForPublish?.title}</strong>.
                                 <br />
-                                <span className="text-sm mt-2 block text-slate-500">
-                                    If students have previously taken this exam, you can choose to reset their attempts for a "Fresh Start".
-                                </span>
+                                {(user?.role === 'Super Admin' || user?.role === 'Owner') && (
+                                    <span className="text-sm mt-2 block text-slate-500">
+                                        If students have previously taken this exam, you can choose to reset their attempts for a "Fresh Start".
+                                    </span>
+                                )}
                             </p>
 
                             <div className="w-full space-y-3">
-                                <button
-                                    onClick={() => confirmPublish(true)}
-                                    className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-indigo-200"
-                                >
-                                    <span>🔄 Reset Attempts & Publish</span>
-                                </button>
-                                <button
-                                    onClick={() => confirmPublish(false)}
-                                    className="w-full py-3 px-4 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors"
-                                >
-                                    <span>Keep History & Publish</span>
-                                </button>
+                                {(user?.role === 'Super Admin' || user?.role === 'Owner') ? (
+                                    <>
+                                        <button
+                                            onClick={() => confirmPublish(true)}
+                                            className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-indigo-200"
+                                        >
+                                            <span>🔄 Reset Attempts & Publish</span>
+                                        </button>
+                                        <button
+                                            onClick={() => confirmPublish(false)}
+                                            className="w-full py-3 px-4 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors"
+                                        >
+                                            <span>Keep History & Publish</span>
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => confirmPublish(false)}
+                                        className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-indigo-200"
+                                    >
+                                        <span>Confirm & Publish</span>
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => setShowPublishModal(false)}
                                     className="mt-2 text-slate-400 font-medium hover:text-slate-600 text-sm"
