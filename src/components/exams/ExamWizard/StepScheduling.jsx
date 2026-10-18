@@ -17,7 +17,7 @@ const StepScheduling = ({ data, updateData }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Start Date & Time</label>
+                    <label className="block text-sm font-medium text-gray-700">Start Date & Time (IST)</label>
                     <input
                         type="datetime-local"
                         name="startTime"
@@ -26,7 +26,7 @@ const StepScheduling = ({ data, updateData }) => {
                         className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2 border"
                     />
                     <p className="mt-1 text-xs text-gray-500">
-                        Students can practice this exam any time after this time.
+                        Students can practice this exam any time after this time. (All times in IST - Asia/Kolkata)
                     </p>
                 </div>
             </div>

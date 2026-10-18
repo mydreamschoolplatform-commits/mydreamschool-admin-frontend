@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, Clock, Eye, Copy, Archive, MoreVertical, BookOpen, Layers, CheckCircle, CheckSquare, Square, Trash2 } from 'lucide-react';
+import { formatExamCardDate, formatExamMonthYear } from '../../utils/dateUtils';
 
 const MonthGroupedExams = ({ exams, onAction, selectedExams = new Set(), onToggleSelection, onToggleSelectAll, userRole, canPublish }) => {
     // 1. Sort by Date (Newest First)
@@ -9,10 +10,9 @@ const MonthGroupedExams = ({ exams, onAction, selectedExams = new Set(), onToggl
         return dateB - dateA;
     });
 
-    // 2. Group by "Month Year"
+    // 2. Group by "Month Year" in Asia/Kolkata (IST)
     const grouped = sortedExams.reduce((acc, exam) => {
-        const date = new Date(exam.startTime || exam.createdAt);
-        const monthYear = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+        const monthYear = formatExamMonthYear(exam.startTime || exam.createdAt);
 
         if (!acc[monthYear]) acc[monthYear] = [];
         acc[monthYear].push(exam);
@@ -69,10 +69,7 @@ const MonthGroupedExams = ({ exams, onAction, selectedExams = new Set(), onToggl
 };
 
 const ExamCard = ({ exam, onAction, isSelected, onToggle, userRole, canPublish }) => {
-    const date = new Date(exam.startTime || exam.createdAt);
-    const day = date.getDate();
-    const dayName = date.toLocaleDateString('default', { weekday: 'short' });
-    const time = date.toLocaleTimeString('default', { hour: '2-digit', minute: '2-digit' });
+    const { day, dayName, time } = formatExamCardDate(exam.startTime || exam.createdAt);
     const isDraft = !exam.isPublished;
     const isTeacher = userRole === 'Teacher';
     const isSuperAdmin = userRole === 'Super Admin' || userRole === 'Owner';

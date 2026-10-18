@@ -8,6 +8,7 @@ import StepAudience from '../../components/exams/ExamWizard/StepAudience';
 import StepScheduling from '../../components/exams/ExamWizard/StepScheduling';
 import StepContent from '../../components/exams/ExamWizard/StepContent';
 import StepQuestions from '../../components/exams/ExamWizard/StepQuestions';
+import { toLocalDatetimeInputString, toUtcIsoString } from '../../utils/dateUtils';
 
 const CreateExam = () => {
     const navigate = useNavigate();
@@ -82,7 +83,7 @@ const CreateExam = () => {
                 language: 'English', // Default or fetch if exists
                 duration: exam.duration,
                 scopes: exam.scopes || { classes: [], medium: [], schools: [] },
-                startTime: exam.startTime || '', // Edit: Keep time. Duplicate: Reset? Maybe keep for clone.
+                startTime: toLocalDatetimeInputString(exam.startTime), // Convert UTC ISO to local YYYY-MM-DDTHH:mm for edit
                 patternSourceUrl: exam.patternSourceUrl,
                 questions: exam.questions || [],
                 parentExamId: isEditMode ? null : exam._id, // Only for versioning
@@ -175,6 +176,7 @@ const CreateExam = () => {
             setLoading(true);
             const payload = {
                 ...formData,
+                startTime: toUtcIsoString(formData.startTime),
                 pattern: getPatternEnum(formData.patternType),
                 isPublished
             };
