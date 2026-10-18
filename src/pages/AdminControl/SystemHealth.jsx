@@ -2,6 +2,63 @@ import React, { useEffect, useState } from 'react';
 import client from '../../api/client';
 import { Activity, AlertTriangle, CheckCircle, Database, Server, Shield, RefreshCw, PlayCircle } from 'lucide-react';
 
+export const SNAPSHOT_FRESHNESS_DAYS = 14;
+export const SNAPSHOT_FRESHNESS_THRESHOLD_MS = SNAPSHOT_FRESHNESS_DAYS * 24 * 60 * 60 * 1000;
+
+export const getSnapshotStatus = (rankInfo, thresholdMs = SNAPSHOT_FRESHNESS_THRESHOLD_MS) => {
+    if (!rankInfo || !rankInfo.hasSnapshot) {
+        return {
+            state: 'missing',
+            label: 'Not Found',
+            badgeClass: 'bg-yellow-100 text-yellow-800',
+            dateText: null,
+            isHealthy: false
+        };
+    }
+
+    if (!rankInfo.lastGenerated) {
+        return {
+            state: 'unknown',
+            label: 'Unknown Date',
+            badgeClass: 'bg-gray-100 text-gray-700',
+            dateText: 'No date recorded',
+            isHealthy: false
+        };
+    }
+
+    const date = new Date(rankInfo.lastGenerated);
+    if (isNaN(date.getTime())) {
+        return {
+            state: 'invalid',
+            label: 'Invalid Date',
+            badgeClass: 'bg-red-100 text-red-800',
+            dateText: 'Invalid Date',
+            isHealthy: false
+        };
+    }
+
+    const isFresh = (Date.now() - date.getTime()) <= thresholdMs;
+    const formattedDate = date.toLocaleDateString();
+
+    if (isFresh) {
+        return {
+            state: 'fresh',
+            label: 'Generated',
+            badgeClass: 'bg-green-100 text-green-800',
+            dateText: formattedDate,
+            isHealthy: true
+        };
+    }
+
+    return {
+        state: 'stale',
+        label: 'Stale',
+        badgeClass: 'bg-amber-100 text-amber-800',
+        dateText: formattedDate,
+        isHealthy: false
+    };
+};
+
 const SystemHealth = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -72,10 +129,16 @@ const SystemHealth = () => {
         </div>
     );
 
-    // Safety: Ensure arrays exist
+// Safety: Ensure arrays exist
     const studentDist = data.studentDistribution || [];
     const examAvail = data.examAvailability || [];
     const rankCov = data.rankingCoverage || [];
+
+    const rankStatuses = rankCov.map(r => getSnapshotStatus(r));
+    const freshRankCount = rankStatuses.filter(s => s.state === 'fresh').length;
+    const staleRankCount = rankStatuses.filter(s => s.state === 'stale').length;
+    const missingRankCount = rankStatuses.filter(s => s.state !== 'fresh' && s.state !== 'stale').length;
+    const hasRankWarnings = rankCov.length === 0 || rankStatuses.some(s => !s.isHealthy);
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
@@ -131,10 +194,14 @@ const SystemHealth = () => {
                 />
                 <HealthCard
                     title="Rank Snapshots"
-                    value={rankCov.filter(g => g.hasSnapshot).length}
-                    subValue={`of ${rankCov.length} Groups`}
+                    value={freshRankCount}
+                    subValue={
+                        staleRankCount > 0 || missingRankCount > 0
+                            ? `Fresh of ${rankCov.length} Groups (${staleRankCount} Stale${missingRankCount > 0 ? `, ${missingRankCount} Missing` : ''})`
+                            : `of ${rankCov.length} Groups`
+                    }
                     icon={Shield}
-                    status={rankCov.some(g => !g.hasSnapshot) ? 'warning' : 'good'}
+                    status={hasRankWarnings ? 'warning' : 'good'}
                 />
             </div>
 
@@ -158,9 +225,10 @@ const SystemHealth = () => {
                             examAvail.map((group, idx) => {
                                 const studentGroup = studentDist.find(s => s.class === group.class && s.medium === group.medium);
                                 const rankInfo = rankCov.find(r => r.class === group.class && r.medium === group.medium);
+                                const snapshotStatus = getSnapshotStatus(rankInfo);
 
                                 const hasExams = group.examCount > 0;
-                                const hasRanks = rankInfo?.hasSnapshot;
+                                const hasRanks = snapshotStatus.isHealthy;
 
                                 return (
                                     <tr key={idx} className="hover:bg-gray-50">
@@ -183,22 +251,37 @@ const SystemHealth = () => {
                                             )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {hasRanks ? (
-                                                <div className="text-sm">
-                                                    <div className="font-medium text-green-600">Generated</div>
-                                                    <div className="text-xs text-gray-400">{rankInfo.lastGenerated ? new Date(rankInfo.lastGenerated).toLocaleDateString() : 'Unknown Date'}</div>
-                                                </div>
-                                            ) : (
+                                            {snapshotStatus.state === 'missing' ? (
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                                     Not Found
                                                 </span>
+                                            ) : snapshotStatus.state === 'invalid' || snapshotStatus.state === 'unknown' ? (
+                                                <div className="text-sm">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 mb-1">
+                                                        {snapshotStatus.label}
+                                                    </span>
+                                                    <div className="text-xs text-gray-400">{snapshotStatus.dateText}</div>
+                                                </div>
+                                            ) : snapshotStatus.state === 'stale' ? (
+                                                <div className="text-sm">
+                                                    <div className="font-medium text-amber-600 flex items-center gap-1.5">
+                                                        <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+                                                        Stale
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">{snapshotStatus.dateText}</div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-sm">
+                                                    <div className="font-medium text-green-600">Generated</div>
+                                                    <div className="text-xs text-gray-400">{snapshotStatus.dateText}</div>
+                                                </div>
                                             )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {hasExams && hasRanks ? (
-                                                <CheckCircle className="h-5 w-5 text-green-500" />
+                                                <CheckCircle className="h-5 w-5 text-green-500" title="Healthy" />
                                             ) : (
-                                                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                                                <AlertTriangle className="h-5 w-5 text-amber-500" title="Attention Needed" />
                                             )}
                                         </td>
                                     </tr>
