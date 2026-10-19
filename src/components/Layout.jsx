@@ -60,10 +60,14 @@ const Layout = () => {
     }
     navItems.push({ path: '/announcements', label: 'Announcements', icon: Megaphone });
 
-    // Super Admin Controls
+    // Staff Management Controls
+    if (['Super Admin', 'Owner', 'School Admin'].includes(user?.role)) {
+        navItems.push({ path: '/admin/staff', label: 'Staff Registry', icon: Users });
+    }
+
+    // Super Admin Foundation Controls
     if (['Super Admin', 'Owner'].includes(user?.role)) {
         navItems.push({ path: '/admin/schools', label: 'Schools', icon: SchoolIcon || BookOpen }); // Fallback icon if SchoolIcon not imported
-        navItems.push({ path: '/admin/staff', label: 'Staff Registry', icon: Users });
         navItems.push({ path: '/admin/system-health', label: 'System Health', icon: Activity || BookOpen }); // Use Activity icon
     }
 
