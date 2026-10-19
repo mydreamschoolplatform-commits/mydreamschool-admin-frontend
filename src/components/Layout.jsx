@@ -11,7 +11,7 @@ const Layout = () => {
 
     // Fetch Unread Tickets (Admin Only)
     React.useEffect(() => {
-        if (user?.role !== 'Student') {
+        if (['Super Admin', 'Owner', 'School Admin'].includes(user?.role)) {
             const fetchStats = async () => {
                 try {
                     // We need a way to call API. Assuming apiClient is available or using fetch with token
