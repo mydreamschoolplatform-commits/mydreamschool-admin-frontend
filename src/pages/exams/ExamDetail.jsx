@@ -265,6 +265,12 @@ const ExamDetail = () => {
                                             </div>
                                         ))}
                                     </div>
+                                    {q.explanation && (
+                                        <div className="mt-2 text-xs bg-blue-50 border border-blue-100 text-blue-900 rounded p-2">
+                                            <span className="font-semibold text-blue-800">Explanation: </span>
+                                            <span className="whitespace-pre-wrap">{q.explanation}</span>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>

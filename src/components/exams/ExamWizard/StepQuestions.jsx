@@ -11,6 +11,7 @@ const StepQuestions = ({ data, updateData }) => {
             questionText: '',
             options: ['', '', '', ''],
             correctAnswer: '',
+            explanation: '',
             type: 'MCQ' // Default
         };
         updateData('questions', [...questions, newQ]);
@@ -134,6 +135,20 @@ const StepQuestions = ({ data, updateData }) => {
                                 Please select the correct answer by clicking the radio button.
                             </p>
                         )}
+
+                        {/* Explanation (Optional) */}
+                        <div className="mt-3">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Explanation (Optional)
+                            </label>
+                            <textarea
+                                value={q.explanation || ''}
+                                onChange={(e) => updateQuestion(index, 'explanation', e.target.value)}
+                                placeholder="Explain why this answer is correct..."
+                                rows={2}
+                                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2 border"
+                            />
+                        </div>
 
                     </div>
                 ))}

@@ -43,6 +43,8 @@ const BulkPasteModal = ({ isOpen, onClose, onAddQuestions }) => {
                     options: [],
                     correctAnswer: '',
                     rawAnswer: '', // to map later
+                    explanation: '',
+                    isParsingExplanation: false,
                     type: 'MCQ'
                 };
                 return;
@@ -55,6 +57,7 @@ const BulkPasteModal = ({ isOpen, onClose, onAddQuestions }) => {
             // Regex: ^[A-Da-d][\.)]\s+
             const optionMatch = line.match(/^([A-Da-d])[\.)]\s+(.+)/);
             if (optionMatch) {
+                currentQ.isParsingExplanation = false;
                 currentQ.options.push({
                     key: optionMatch[1].toUpperCase(),
                     value: optionMatch[2]
@@ -66,7 +69,23 @@ const BulkPasteModal = ({ isOpen, onClose, onAddQuestions }) => {
             // Regex: ^(Ans|Answer|Correct)[:\-\s]+([A-Da-d])
             const answerMatch = line.match(/^(?:Ans|Answer|Correct)(?:[:\-\s]+)([A-Da-d])/i);
             if (answerMatch) {
+                currentQ.isParsingExplanation = false;
                 currentQ.rawAnswer = answerMatch[1].toUpperCase();
+                return;
+            }
+
+            // Check for Explanation start
+            // Regex: ^(Explanation|Exp)[:\s]+(.*)
+            const explanationMatch = line.match(/^(?:Explanation|Exp)[:\-\s]+(.*)/i);
+            if (explanationMatch) {
+                currentQ.explanation = explanationMatch[1].trim();
+                currentQ.isParsingExplanation = true;
+                return;
+            }
+
+            // If already parsing an explanation, continue multiline explanation
+            if (currentQ.isParsingExplanation) {
+                currentQ.explanation = currentQ.explanation ? `${currentQ.explanation}\n${line}` : line;
                 return;
             }
 
@@ -91,6 +110,7 @@ const BulkPasteModal = ({ isOpen, onClose, onAddQuestions }) => {
                 questionText: q.questionText,
                 options: plainOptions,
                 correctAnswer: correctOpt ? correctOpt.value : '', // Set the TEXT value of the answer
+                explanation: (q.explanation || '').trim(),
                 type: 'MCQ'
             };
         });
@@ -142,6 +162,7 @@ B. Berlin
 C. Paris
 D. Madrid
 Answer: C
+Explanation: Paris is the capital and largest city of France.
 
 2. Next question...`}
                                 </pre>
@@ -196,6 +217,11 @@ Answer: C
                                                     </li>
                                                 ))}
                                             </ul>
+                                            {q.explanation && (
+                                                <p className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded p-2 mt-2 whitespace-pre-wrap">
+                                                    <strong>Explanation:</strong> {q.explanation}
+                                                </p>
+                                            )}
                                             {!q.correctAnswer && (
                                                 <p className="text-xs text-red-500 mt-2">No correct answer detected.</p>
                                             )}
