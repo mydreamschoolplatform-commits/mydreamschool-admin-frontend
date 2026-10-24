@@ -85,6 +85,7 @@ const CreateExam = () => {
                 scopes: exam.scopes || { classes: [], medium: [], schools: [] },
                 startTime: toLocalDatetimeInputString(exam.startTime), // Convert UTC ISO to local YYYY-MM-DDTHH:mm for edit
                 patternSourceUrl: exam.patternSourceUrl,
+                videoMetadata: exam.videoMetadata || null,
                 questions: exam.questions || [],
                 parentExamId: isEditMode ? null : exam._id, // Only for versioning
                 version: isEditMode ? exam.version : (exam.version || 1) + 1,

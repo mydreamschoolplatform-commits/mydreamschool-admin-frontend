@@ -115,5 +115,20 @@ export const examService = {
     bulkDeleteExams: async (examIds) => {
         const res = await client.post('/admin/exams/bulk-delete', { examIds });
         return res.data;
+    },
+
+    // Video Upload for Video + MCQ pattern
+    uploadExamVideo: async (formData, onProgress) => {
+        const res = await client.post('/admin/exams/upload-video', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            timeout: 180000, // 3 minute timeout for larger files
+            onUploadProgress: (progressEvent) => {
+                if (onProgress && progressEvent.total) {
+                    const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    onProgress(percent);
+                }
+            }
+        });
+        return res.data;
     }
 };
