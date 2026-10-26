@@ -121,7 +121,7 @@ export const examService = {
     uploadExamVideo: async (formData, onProgress) => {
         const res = await client.post('/admin/exams/upload-video', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
-            timeout: 180000, // 3 minute timeout for larger files
+            timeout: 900000, // 15 minute timeout for video files up to 100MB on slow networks
             onUploadProgress: (progressEvent) => {
                 if (onProgress && progressEvent.total) {
                     const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);

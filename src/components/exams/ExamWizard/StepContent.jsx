@@ -106,8 +106,15 @@ const StepContent = ({ data, updateData }) => {
             }
         } catch (err) {
             console.error('Video upload error:', err);
-            const serverMsg = err.response?.data?.message || err.message || 'Failed to upload video.';
-            setUploadError(serverMsg);
+            let errorMsg = 'Failed to upload video.';
+            if (err.code === 'ECONNABORTED' || (err.message && err.message.toLowerCase().includes('timeout'))) {
+                errorMsg = 'Upload timed out. The video file is large or the network connection is slow. Please try again or compress the video before uploading.';
+            } else if (err.response?.data?.message) {
+                errorMsg = err.response.data.message;
+            } else if (err.message) {
+                errorMsg = err.message;
+            }
+            setUploadError(errorMsg);
         } finally {
             setUploading(false);
         }
@@ -329,7 +336,7 @@ const StepContent = ({ data, updateData }) => {
                                                 {uploading ? (
                                                     <>
                                                         <RefreshCw size={14} className="animate-spin" />
-                                                        Uploading ({uploadProgress}%)
+                                                        {uploadProgress >= 100 ? 'Processing Video...' : `Uploading (${uploadProgress}%)`}
                                                     </>
                                                 ) : (
                                                     <>
@@ -356,17 +363,25 @@ const StepContent = ({ data, updateData }) => {
                                 {uploading && (
                                     <div className="space-y-1">
                                         <div className="flex justify-between text-xs text-gray-600">
-                                            <span>Uploading video...</span>
+                                            <span>
+                                                {uploadProgress >= 100
+                                                    ? 'Processing & cloud-storing video... Please wait...'
+                                                    : 'Uploading video...'}
+                                            </span>
                                             <span>{uploadProgress}%</span>
                                         </div>
                                         <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                                             <div
-                                                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                                                className={`h-2.5 rounded-full transition-all duration-300 ${
+                                                    uploadProgress >= 100 ? 'bg-indigo-600 animate-pulse' : 'bg-blue-600'
+                                                }`}
                                                 style={{ width: `${uploadProgress}%` }}
                                             />
                                         </div>
                                         <p className="text-xs text-gray-500 italic">
-                                            Please do not close this page or submit the form until upload completes.
+                                            {uploadProgress >= 100
+                                                ? 'File transferred to server. Finalizing cloud encoding and generating playable preview...'
+                                                : 'Please do not close this page or submit the form until upload completes.'}
                                         </p>
                                     </div>
                                 )}
