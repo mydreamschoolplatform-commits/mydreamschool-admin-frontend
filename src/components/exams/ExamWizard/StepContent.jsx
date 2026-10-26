@@ -138,55 +138,64 @@ const StepContent = ({ data, updateData }) => {
     };
 
     const renderVideoConfig = () => {
-        const hasExistingVideo = Boolean(data.patternSourceUrl);
+        // Only consider it an existing uploaded video if it's actually an uploaded video, NOT a YouTube URL
+        const hasUploadedVideo = isExistingUploadedVideo;
         const resolvedVideoUrl = resolveMediaUrl(data.patternSourceUrl);
 
         return (
             <div className="space-y-4">
-                {/* Method Selector Tabs */}
-                <div className="flex border-b border-gray-200">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setVideoMode('url');
-                            setUploadError('');
-                        }}
-                        className={`py-2 px-4 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors ${
-                            videoMode === 'url'
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}
-                    >
-                        <LinkIcon size={16} />
-                        Use Video URL
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setVideoMode('upload');
-                            setUploadError('');
-                        }}
-                        className={`py-2 px-4 text-sm font-medium border-b-2 flex items-center gap-2 transition-colors ${
-                            videoMode === 'upload'
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}
-                    >
-                        <Upload size={16} />
-                        Upload Video File
-                    </button>
+                {/* Method Selector: Crystal-clear choice between YouTube URL and Upload Video File */}
+                <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                        Video Source Method
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                            type="button"
+                            id="video-source-youtube-btn"
+                            onClick={() => {
+                                setVideoMode('url');
+                                setUploadError('');
+                            }}
+                            className={`p-3.5 rounded-lg border-2 flex items-center justify-center gap-2.5 font-semibold text-sm transition-all ${
+                                videoMode === 'url'
+                                    ? 'border-blue-600 bg-blue-50 text-blue-700 ring-2 ring-blue-500 ring-opacity-20 shadow-sm'
+                                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                        >
+                            <LinkIcon size={18} className={videoMode === 'url' ? 'text-blue-600' : 'text-gray-400'} />
+                            YouTube URL
+                        </button>
+                        <button
+                            type="button"
+                            id="video-source-upload-btn"
+                            onClick={() => {
+                                setVideoMode('upload');
+                                setUploadError('');
+                            }}
+                            className={`p-3.5 rounded-lg border-2 flex items-center justify-center gap-2.5 font-semibold text-sm transition-all ${
+                                videoMode === 'upload'
+                                    ? 'border-blue-600 bg-blue-50 text-blue-700 ring-2 ring-blue-500 ring-opacity-20 shadow-sm'
+                                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                        >
+                            <Upload size={18} className={videoMode === 'upload' ? 'text-blue-600' : 'text-gray-400'} />
+                            Upload video file
+                        </button>
+                    </div>
                 </div>
 
-                {/* MODE 1: External URL */}
+                {/* OPTION A: YouTube Video Option */}
                 {videoMode === 'url' && (
                     <div className="space-y-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <label className="block text-sm font-medium text-gray-700">
-                            Video URL (YouTube or Direct Video Link)
+                            YouTube Video URL / ID
                         </label>
                         <input
                             type="text"
                             name="patternSourceUrl"
-                            value={data.patternSourceUrl || ''}
+                            id="youtube-video-url-input"
+                            value={hasUploadedVideo ? '' : (data.patternSourceUrl || '')}
                             onChange={(e) => {
                                 handleChange(e);
                                 updateData('videoMetadata', {
@@ -198,47 +207,65 @@ const StepContent = ({ data, updateData }) => {
                                     storageProvider: 'external'
                                 });
                             }}
-                            placeholder="https://www.youtube.com/watch?v=... or https://example.com/video.mp4"
-                            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2 border bg-white"
+                            placeholder="https://youtube.com/watch?v=..."
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2 border bg-white"
                         />
                         <p className="text-xs text-gray-500">
-                            Supports YouTube URLs and direct video links (MP4, WebM).
+                            Enter a YouTube video URL or ID. Students will view this video in Exam Player.
                         </p>
 
-                        {/* Optional live URL preview if user provided a direct MP4 or YouTube */}
-                        {data.patternSourceUrl && (
+                        {hasUploadedVideo && (
+                            <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                                Note: An uploaded video file is currently stored. Entering a YouTube URL here will switch this exam to YouTube reference content.
+                            </p>
+                        )}
+
+                        {/* YouTube Preview Badge */}
+                        {data.patternSourceUrl && !hasUploadedVideo && (
                             <div className="mt-3">
                                 <span className="text-xs font-semibold text-gray-600 block mb-1">Preview:</span>
-                                {data.patternSourceUrl.includes('youtube') || data.patternSourceUrl.includes('youtu.be') ? (
-                                    <div className="text-xs text-blue-700 bg-blue-50 p-2 rounded border border-blue-200">
-                                        YouTube URL detected: will be securely embedded for students in Exam Player.
-                                    </div>
-                                ) : (
-                                    <video
-                                        controls
-                                        playsInline
-                                        src={resolvedVideoUrl}
-                                        className="w-full max-h-56 rounded-md bg-black"
-                                    >
-                                        Your browser does not support previewing this video.
-                                    </video>
-                                )}
+                                <div className="text-xs text-blue-700 bg-blue-50 p-2.5 rounded border border-blue-200">
+                                    YouTube URL detected: will be securely embedded for students in Exam Player.
+                                </div>
                             </div>
                         )}
                     </div>
                 )}
 
-                {/* MODE 2: Upload Video File */}
+                {/* OPTION B: Local Video File Upload Option */}
                 {videoMode === 'upload' && (
                     <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        {/* Case 1: Already has an uploaded / saved video and not currently replacing */}
-                        {hasExistingVideo && !isReplacing ? (
+                        {/* Success message */}
+                        {uploadSuccess && (
+                            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-xs">
+                                <CheckCircle size={16} className="shrink-0" />
+                                <span>Video uploaded successfully! Playable preview is ready below.</span>
+                            </div>
+                        )}
+
+                        {/* Error message */}
+                        {uploadError && (
+                            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
+                                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                                <span className="flex-1">{uploadError}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setUploadError('')}
+                                    className="text-red-500 hover:text-red-700"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* State 1: An uploaded video file is already saved and not replacing */}
+                        {hasUploadedVideo && !isReplacing ? (
                             <div className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
                                         <FileVideo size={18} className="text-blue-600" />
                                         <span>
-                                            {data.videoMetadata?.originalFileName || 'Attached Video'}
+                                            {data.videoMetadata?.originalFileName || 'Attached Video File'}
                                         </span>
                                         {data.videoMetadata?.sizeBytes > 0 && (
                                             <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
@@ -280,14 +307,14 @@ const StepContent = ({ data, updateData }) => {
                                 </div>
                             </div>
                         ) : (
-                            /* Case 2: No video yet OR user clicked Replace */
+                            /* State 2: No video uploaded yet OR user clicked Replace Video */
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Select Video File from Computer
+                                        Upload Video File
                                     </label>
                                     <p className="text-xs text-gray-500 mb-2">
-                                        Supported formats: MP4 (H.264 / AAC recommended), WebM, OGG. Maximum file size: 100 MB.
+                                        Supported format: MP4 (H.264 / AAC recommended). Maximum file size: 100 MB.
                                     </p>
 
                                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors bg-white">
@@ -309,7 +336,7 @@ const StepContent = ({ data, updateData }) => {
                                                 Click to browse video file
                                             </span>
                                             <span className="text-xs text-gray-500 mt-1">
-                                                MP4, WebM up to 100MB
+                                                MP4 video up to 100 MB
                                             </span>
                                         </label>
                                     </div>
@@ -329,6 +356,7 @@ const StepContent = ({ data, updateData }) => {
                                         <div className="flex items-center gap-2">
                                             <button
                                                 type="button"
+                                                id="start-upload-video-btn"
                                                 onClick={handleUploadVideo}
                                                 disabled={uploading}
                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
@@ -386,31 +414,8 @@ const StepContent = ({ data, updateData }) => {
                                     </div>
                                 )}
 
-                                {/* Success message */}
-                                {uploadSuccess && (
-                                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-xs">
-                                        <CheckCircle size={16} className="shrink-0" />
-                                        <span>Video uploaded successfully! Playable preview is ready below.</span>
-                                    </div>
-                                )}
-
-                                {/* Error message */}
-                                {uploadError && (
-                                    <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
-                                        <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                                        <span className="flex-1">{uploadError}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setUploadError('')}
-                                            className="text-red-500 hover:text-red-700"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-                                )}
-
                                 {/* Cancel Replace button if user was replacing an existing video */}
-                                {isReplacing && hasExistingVideo && !uploading && (
+                                {isReplacing && hasUploadedVideo && !uploading && (
                                     <div className="pt-2">
                                         <button
                                             type="button"
